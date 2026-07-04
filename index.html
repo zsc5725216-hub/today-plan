@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="今日安排">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%231a3c6e' width='100' height='100' rx='20'/><text x='50' y='70' text-anchor='middle' fill='white' font-size='52' font-family='system-ui'>📋</text></svg>">
+<title>今日安排</title>
+<style>
+:root{--bg:#f5f5f7;--card:#fff;--text:#1d1d1f;--sub:#86868b;--accent:#1a3c6e;--red:#c0504d;--orange:#e36c09;--blue:#2b579a;--purple:#7030a0;--green:#548235;--border:#e5e5ea;--shadow:0 1px 3px rgba(0,0,0,.08);--radius:14px}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--card:#1c1c1e;--text:#f5f5f7;--sub:#98989d;--border:#38383a;--shadow:0 1px 3px rgba(0,0,0,.3)}}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:env(safe-area-inset-top) 14px 50px;-webkit-font-smoothing:antialiased;max-width:500px;margin:0 auto}
+.header{text-align:center;padding:16px 0 8px}
+.header .date{font-size:12px;color:var(--sub);font-weight:500;letter-spacing:.5px}
+.header h1{font-size:26px;font-weight:700;margin-top:3px;letter-spacing:-.5px}
+.day-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 13px;border-radius:20px;font-size:12px;font-weight:600;margin-top:6px}
+.badge-training{background:#e8f0fe;color:var(--blue)}
+.badge-rest{background:#e8f5e9;color:var(--green)}
+.badge-fullrest{background:#fce4ec;color:#c62828}
+@media(prefers-color-scheme:dark){.badge-training{background:#1a3c6e33;color:#7aa2f7}.badge-rest{background:#2e4a2e33;color:#81c784}.badge-fullrest{background:#4a1a1a33;color:#ef9a9a}}
+
+/* Day nav */
+.dnav{display:flex;gap:3px;overflow-x:auto;padding:8px 0 10px;-webkit-overflow-scrolling:touch;scrollbar-width:none;justify-content:center}
+.dnav::-webkit-scrollbar{display:none}
+.dnav button{flex:0 0 auto;padding:7px 12px;border-radius:18px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;font-family:inherit;transition:all .15s}
+.dnav button.active{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
+
+/* Tab buttons */
+.tabs{display:flex;gap:6px;padding:0 0 14px;justify-content:center}
+.tabs button{flex:1;max-width:90px;padding:10px 8px;border-radius:12px;border:1.5px solid var(--border);background:var(--card);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:4px}
+.tabs button .t-icon{font-size:18px}
+.tabs button.active{border-color:var(--accent);background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(26,60,110,.25)}
+.tabs button.active .t-icon{filter:brightness(2)}
+
+/* Cards */
+.card{background:var(--card);border-radius:var(--radius);padding:15px;margin-bottom:10px;box-shadow:var(--shadow)}
+.card h3{font-size:15px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:7px}
+
+/* Timeline */
+.tl{position:relative;padding-left:14px}
+.tl::before{content:'';position:absolute;left:0;top:3px;bottom:3px;width:2px;background:var(--border);border-radius:1px}
+.ti{position:relative;padding:0 0 10px 14px}
+.ti:last-child{padding-bottom:0}
+.ti::before{content:'';position:absolute;left:-19px;top:4px;width:9px;height:9px;border-radius:50%;background:var(--accent);border:2px solid var(--bg)}
+.tt{font-size:11px;color:var(--sub);font-weight:600;margin-bottom:1px}
+.ta{font-size:13px;font-weight:500}
+.tn{font-size:11px;color:var(--sub);margin-top:1px}
+
+/* Exercise */
+.ex{display:flex;justify-content:space-between;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--border)}
+.ex:last-child{border-bottom:none}
+.exn{font-size:13px;font-weight:500;flex:1}
+.exs{font-size:12px;color:var(--accent);font-weight:600;white-space:nowrap;margin-left:8px}
+.exnote{font-size:11px;color:var(--sub);margin-top:1px}
+
+/* Meal */
+.meal{padding:9px 0;border-bottom:1px solid var(--border)}
+.meal:last-child{border-bottom:none}
+.mh{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.mn{font-size:13px;font-weight:600}
+.mt{font-size:11px;color:var(--sub)}
+.mo{font-size:12px;color:var(--text);line-height:1.5}
+.ml{font-size:10px;color:var(--green);font-weight:500;margin-left:5px}
+
+/* Rehab checkboxes */
+.rh{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)}
+.rh:last-child{border-bottom:none}
+.rh input[type=checkbox]{width:19px;height:19px;accent-color:var(--accent);flex-shrink:0}
+.rh label{font-size:13px;cursor:pointer;line-height:1.4}
+
+/* Study blocks */
+.sb{padding:8px 10px;border-radius:8px;margin-bottom:5px;background:#f0f4ff}
+.sbs{font-size:13px;font-weight:600}
+.sbt{font-size:11px;color:var(--sub);margin-top:1px}
+.sbp{font-size:10px;color:var(--blue);margin-top:1px;font-style:italic}
+@media(prefers-color-scheme:dark){.sb{background:#1a2a4a33}}
+
+/* Tips */
+.tips{font-size:11px;color:var(--sub);line-height:1.5;padding:9px 12px;border-radius:8px;background:#fff9e6}
+.tips strong{color:var(--orange)}
+@media(prefers-color-scheme:dark){.tips{background:#2a2410}}
+
+/* Grocery */
+.grocery-table{width:100%;border-collapse:collapse;font-size:12px;margin:8px 0}
+.grocery-table td,.grocery-table th{padding:6px 8px;border-bottom:1px solid var(--border);text-align:left}
+.grocery-table th{font-size:11px;color:var(--sub);font-weight:600;background:var(--bg)}
+.grocery-table .cat{background:#f0f4ff;font-weight:600;font-size:12px}
+@media(prefers-color-scheme:dark){.grocery-table .cat{background:#1a2a4a33}}
+
+.sep{padding:5px 0;font-size:11px;color:var(--sub);font-weight:600;margin-top:3px}
+.cn{font-size:11px;color:var(--sub);text-align:center;margin-top:14px;padding:10px;border-radius:8px;background:var(--card)}
+.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;margin-right:4px}
+.tag-math{background:#e3f2fd;color:#1565c0}
+.tag-eng{background:#fce4ec;color:#c62828}
+.tag-408{background:#e8f5e9;color:#2e7d32}
+.tag-pol{background:#fff3e0;color:#e65100}
+@media(prefers-color-scheme:dark){.tag-math{background:#0d47a133}.tag-eng{background:#b71c1c33}.tag-408{background:#1b5e2033}.tag-pol{background:#e6510033}}
+
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="date" id="dd"></div>
+  <h1 id="dt"></h1>
+  <div id="db"></div>
+</div>
+
+<div class="dnav" id="dn"></div>
+<div class="tabs" id="tabs"></div>
+<div id="ct"></div>
+<div class="cn">📍 自习室通勤30分钟 · 所有餐食提前备好携带 · 间歇断食 11:30–21:00</div>
+
+<script>
+const DAYS = ['mon','tue','wed','thu','fri','sat','sun'];
+
+// ===================== DATA =====================
+const studyCommon = [
+  {sub:'数学二（高数+线代）',time:'8:00–10:00',tip:'上午最清醒，刷大题+公式',tags:'math'},
+  {sub:'408 数据结构/计组',time:'10:00–11:30',tip:'概念+算法，换脑保持强度',tags:'408'},
+  {sub:'英语二 阅读',time:'12:15–13:00',tip:'饭后轻学习',tags:'eng'},
+  {sub:'408 操作系统 / 政治',time:'13:30–15:30',tip:'OS概念/政治刷题',tags:'408'},
+  {sub:'英语二 翻译+写作',time:'19:00–20:30',tip:'训练后不过度费脑',tags:'eng'},
+  {sub:'408 计算机网络 / 复盘',time:'21:00–22:30',tip:'计网记忆类，睡前效果好',tags:'408'},
+];
+const studySat = [
+  {sub:'数学二 模拟卷',time:'8:30–11:30',tip:'严格计时，全真模拟',tags:'math'},
+  {sub:'408 真题',time:'13:00–15:00',tip:'整套408，2.5h限时',tags:'408'},
+  {sub:'对答案+错题整理',time:'15:00–17:00',tip:'深度复盘，画知识图谱',tags:''},
+  {sub:'英语二 阅读精练',time:'18:30–20:00',tip:'2篇阅读+精翻',tags:'eng'},
+  {sub:'政治 / 自由复习',time:'20:00–21:30',tip:'补弱项/整理本周笔记',tags:'pol'},
+];
+const mealsCommon = [
+  {time:'11:30',name:'午餐',loc:'自习室',kcal:'~750',options:'鸡胸200g/牛肉150g + 米饭/红薯250-300g + 西兰花+胡萝卜 + 橄榄油10ml'},
+  {time:'15:30',name:'练前餐',loc:'自习室',kcal:'~400',options:'全麦面包2片+花生酱20g + 香蕉1根 或 燕麦80g+蛋白粉冷水冲'},
+  {time:'18:00',name:'练后餐',loc:'路上/健身房',kcal:'~500',options:'即食鸡胸150g/蛋白粉+牛奶 + 红薯200g/全麦面包2片'},
+  {time:'20:30',name:'晚餐 🔥现做',loc:'家',kcal:'~600',options:'豆腐+鸡蛋/虾仁/去皮鸡腿 + 米饭150g/红薯200g + 炒蔬菜 + 橄榄油10ml'},
+];
+
+const D = {
+mon:{name:'周一',title:'推日 · 胸肩三头+核心',dt:'training',badge:'🏋️ 训练日',bc:'badge-training',
+sch:[
+{t:'7:00',a:'起床 · 喝水500ml',n:'不吃饭'},{t:'7:10–7:20',a:'拉伸5分钟+装盒',n:'冰箱拿备餐→保温饭盒'},{t:'7:20–7:50',a:'🚶 通勤自习室',n:'🎧 听政治带背/英语单词'},{t:'8:00–10:00',a:'📐 数学二',n:'上午最清醒，刷大题+背公式'},{t:'10:00–11:30',a:'💻 408 数据结构/计组',n:'概念+算法题'},{t:'11:30–12:15',a:'🍱 午餐（第1盒）',n:'进食窗口开启'},{t:'12:15–13:00',a:'📖 英语二 阅读',n:'饭后轻学习'},{t:'13:00–13:30',a:'💤 午休',n:'趴桌至少闭眼20分钟'},{t:'13:30–15:30',a:'💻 408 OS / 政治',n:''},{t:'15:30–15:45',a:'🥪 练前餐（常温）',n:'面包+花生酱+香蕉'},{t:'15:45–16:15',a:'🚶 去健身房',n:''},{t:'16:15–18:15',a:'🏋️ 推日训练+30分有氧',n:'🔑左肘锁肘不完全打直'},{t:'18:15–18:30',a:'🥩 练后餐',n:'蛋白粉摇摇杯+红薯'},{t:'18:30–19:00',a:'🚶 通勤回家',n:''},{t:'19:00–20:30',a:'🇬🇧 英语二 翻译+写作',n:''},{t:'20:30–21:00',a:'🍲 晚餐（第4盒）',n:'进食窗口关闭'},{t:'21:00–22:30',a:'💻 408 计网/复盘',n:'睡前记忆效果好'},{t:'22:30–23:00',a:'泡沫轴+装盒+肘滑动',n:'尺神经滑动10次×3'},{t:'23:00',a:'😴 睡觉',n:''}],
+study:studyCommon,
+tr:{title:'推日训练 🔑注意左肘',ex:[
+{n:'哑铃卧推',s:'4×8–10',note:'锁肘不完全打直，停在弹响前'},{n:'上斜哑铃推举',s:'3×10–12',note:'同样控制肘部锁定幅度'},{n:'坐姿哑铃推肩',s:'4×8–10',note:'肘不过伸'},{n:'绳索夹胸',s:'3×12–15',note:'减少肩+肘压力'},{n:'弹力带三头下压 🔑',s:'3×15–20',note:'弹力带变阻，对肘友好'},{n:'绳索单臂反握下压',s:'3×12–15/侧',note:'先轻试是否触发弹响'},{n:'哑铃侧平举',s:'3×15–20',note:'轻重量'},{n:'死虫式',s:'3×10/侧',note:'核心稳定'},{n:'平板支撑',s:'3×45–60秒',note:'不塌腰'}]},
+meals:mealsCommon,
+rehab:['左肘尺神经滑动 10次×3（睡前）','髋屈肌拉伸 托马斯拉伸 30秒×2','训练前热身5分钟（猫牛→臀桥→弹力带走→死虫→肩绕环）','练后单车30分钟 心率120-140'],
+tips:'💡 左肘：推类锁肘不完全打直，弹力带三头下压优先。反握下压如果触发弹响就换成弹力带俯身臂屈伸。'},
+tue:{name:'周二',title:'拉日 · 背二头+姿势+髋康复',dt:'training',badge:'🏋️ 训练日',bc:'badge-training',
+sch:[
+{t:'7:00',a:'起床 · 喝水500ml',n:'不吃饭'},{t:'7:10–7:20',a:'拉伸+装盒',n:''},{t:'7:20–7:50',a:'🚶 通勤',n:'🎧 听政治/单词'},{t:'8:00–10:00',a:'📐 数学二',n:''},{t:'10:00–11:30',a:'💻 408 数据结构/计组',n:''},{t:'11:30–12:15',a:'🍱 午餐',n:''},{t:'12:15–13:00',a:'📖 英语二 阅读',n:''},{t:'13:00–13:30',a:'💤 午休',n:''},{t:'13:30–15:30',a:'💻 408 OS / 政治',n:''},{t:'15:30–15:45',a:'🥪 练前餐',n:''},{t:'15:45–16:15',a:'🚶 去健身房',n:''},{t:'16:15–18:15',a:'🏋️ 拉日训练+有氧+髋康复',n:''},{t:'18:15–18:30',a:'🥩 练后餐',n:''},{t:'18:30–19:00',a:'🚶 回家',n:''},{t:'19:00–20:30',a:'🇬🇧 英语二 翻译+写作',n:''},{t:'20:30–21:00',a:'🍲 晚餐',n:''},{t:'21:00–22:30',a:'💻 408 计网/复盘',n:''},{t:'22:30–23:00',a:'泡沫轴+装盒+肘滑动',n:''},{t:'23:00',a:'😴 睡觉',n:''}],
+study:studyCommon,
+tr:{title:'拉日训练+髋康复',ex:[
+{n:'器械高位下拉',s:'4×8–10',note:'替代引体，控制离心'},{n:'胸部支撑划船',s:'4×10–12',note:'脊椎有支撑，腰安全'},{n:'坐姿绳索划船',s:'3×10–12',note:'躯干稳定'},{n:'面拉 Face Pull',s:'3×15–20',note:'🔑纠正圆肩驼背'},{n:'哑铃弯举',s:'3×10–12',note:''},{n:'绳索锤式弯举',s:'3×12–15',note:''},{n:'弹力带肩外旋',s:'2×15/侧',note:'肩袖+姿势'},{n:'墙角拉伸',s:'2×30秒',note:'打开前侧链'},{n:'--髋康复--',s:'',note:''},{n:'托马斯拉伸',s:'3×30秒/侧',note:'拉伸髂腰肌'},{n:'沙发拉伸',s:'2×45秒/侧',note:'股四头+髋屈肌'},{n:'臀桥（弹力带）',s:'3×15',note:'激活臀肌'},{n:'蚌式开合',s:'2×20/侧',note:'臀中肌'}]},
+meals:mealsCommon,
+rehab:['髋康复全套（训练末尾做，不跳过）','左肘尺神经滑动 10次×3（睡前）','弹力带慢速臂屈伸 15次×2','训练前热身5分钟','练后单车30分钟'],
+tips:'💡 周二重点：髋康复不跳过！训练末尾托马斯拉伸→沙发拉伸→臀桥→蚌式，坚持2-4周弹响明显减轻。'},
+wed:{name:'周三',title:'上肢综合 · 中等强度',dt:'training',badge:'🏋️ 训练日',bc:'badge-training',
+sch:[
+{t:'7:00',a:'起床 · 喝水500ml',n:'不吃饭'},{t:'7:10–7:20',a:'拉伸+装盒',n:''},{t:'7:20–7:50',a:'🚶 通勤',n:'🎧 听政治/单词'},{t:'8:00–10:00',a:'📐 数学二',n:''},{t:'10:00–11:30',a:'💻 408 数据结构/计组',n:''},{t:'11:30–12:15',a:'🍱 午餐',n:''},{t:'12:15–13:00',a:'📖 英语二 阅读',n:''},{t:'13:00–13:30',a:'💤 午休',n:''},{t:'13:30–15:30',a:'💻 408 OS / 政治',n:''},{t:'15:30–15:45',a:'🥪 练前餐',n:''},{t:'15:45–16:15',a:'🚶 去健身房',n:''},{t:'16:15–18:15',a:'🏋️ 上肢综合+有氧',n:'中等强度，打磨技术'},{t:'18:15–18:30',a:'🥩 练后餐',n:''},{t:'18:30–19:00',a:'🚶 回家',n:''},{t:'19:00–20:30',a:'🇬🇧 英语二 翻译+写作',n:''},{t:'20:30–21:00',a:'🍲 晚餐',n:''},{t:'21:00–22:30',a:'💻 408 计网/复盘',n:''},{t:'22:30–23:00',a:'放松+装盒+肘滑动',n:''},{t:'23:00',a:'😴 睡觉',n:''}],
+study:studyCommon,
+tr:{title:'上肢综合训练（中强度）',ex:[
+{n:'哑铃卧推（中重量）',s:'3×10–12',note:'控制锁肘幅度'},{n:'高位下拉（中重量）',s:'3×10–12',note:'控制节奏'},{n:'坐姿哑铃推肩',s:'3×10–12',note:''},{n:'胸部支撑划船',s:'3×10–12',note:''},{n:'弹力带三头下压 🔑',s:'2×15–20',note:'不完全锁肘'},{n:'哑铃弯举',s:'2×12–15',note:''},{n:'弹力带拉开',s:'3×15',note:'姿势维持'},{n:'靠墙天使',s:'2×10',note:'胸椎活动度'}]},
+meals:mealsCommon,
+rehab:['左肘尺神经滑动 10次×3','弹力带慢速臂屈伸 15次×2','训练前热身5分钟','练后坡度走30分钟'],
+tips:'💡 周三强度不高，目的是维持频率+打磨动作。如果某天特别累想多休，周三最适合调成休息。'},
+thu:{name:'周四',title:'腿A · 股四主导+单侧+核心',dt:'training',badge:'🏋️ 训练日',bc:'badge-training',
+sch:[
+{t:'7:00',a:'起床 · 喝水500ml',n:'不吃饭'},{t:'7:10–7:20',a:'拉伸+装盒',n:''},{t:'7:20–7:50',a:'🚶 通勤',n:'🎧 听政治/单词'},{t:'8:00–10:00',a:'📐 数学二',n:''},{t:'10:00–11:30',a:'💻 408 数据结构/计组',n:''},{t:'11:30–12:15',a:'🍱 午餐',n:''},{t:'12:15–13:00',a:'📖 英语二 阅读',n:''},{t:'13:00–13:30',a:'💤 午休',n:''},{t:'13:30–15:30',a:'💻 408 OS / 政治',n:''},{t:'15:30–15:45',a:'🥪 练前餐',n:''},{t:'15:45–16:15',a:'🚶 去健身房',n:''},{t:'16:15–18:15',a:'🏋️ 腿A训练+有氧',n:'🔑从右腿开始！'},{t:'18:15–18:30',a:'🥩 练后餐',n:''},{t:'18:30–19:00',a:'🚶 回家',n:''},{t:'19:00–20:30',a:'🇬🇧 英语二 翻译+写作',n:''},{t:'20:30–21:00',a:'🍲 晚餐',n:''},{t:'21:00–22:30',a:'💻 408 计网/复盘',n:''},{t:'22:30–23:00',a:'泡沫轴+装盒+肘滑动',n:''},{t:'23:00',a:'😴 睡觉',n:''}],
+study:studyCommon,
+tr:{title:'腿A · 股四主导 🔑右腿先做',ex:[
+{n:'高脚杯深蹲',s:'4×8–10',note:'杠铃游离，对腰友好'},{n:'保加利亚分腿蹲',s:'4×8–10/侧',note:'🔑从右腿开始！脚跟踩实'},{n:'腿举（半程）',s:'3×12–15',note:'不完全屈髋到底'},{n:'单腿腿举',s:'3×10–12/侧',note:'🔑右腿先做，匹配次数'},{n:'腿弯举',s:'3×12–15',note:'俯卧位腰安全'},{n:'站姿提踵',s:'4×15–20',note:''},{n:'鸟狗式',s:'3×8/侧',note:'核心+脊柱稳定'},{n:'Pallof Press',s:'3×10/侧',note:'核心抗旋转'}]},
+meals:mealsCommon,
+rehab:['🔑所有单侧动作从右腿开始！','左肘尺神经滑动 10次×3','训练前热身（臀肌激活重点做）','练后单车30分钟'],
+tips:'💡 腿A重点：①右腿先做 ②腿举不过深 ③训练前臀肌激活（弹力带臀桥+蚌式）——直接决定腰的安全。'},
+fri:{name:'周五',title:'腿B · 后链+单侧+髋康复',dt:'training',badge:'🏋️ 训练日',bc:'badge-training',
+sch:[
+{t:'7:00',a:'起床 · 喝水500ml',n:'不吃饭'},{t:'7:10–7:20',a:'拉伸+装盒',n:''},{t:'7:20–7:50',a:'🚶 通勤',n:'🎧 听政治/单词'},{t:'8:00–10:00',a:'📐 数学二',n:''},{t:'10:00–11:30',a:'💻 408 数据结构/计组',n:''},{t:'11:30–12:15',a:'🍱 午餐',n:''},{t:'12:15–13:00',a:'📖 英语二 阅读',n:''},{t:'13:00–13:30',a:'💤 午休',n:''},{t:'13:30–15:30',a:'💻 408 OS / 政治',n:''},{t:'15:30–15:45',a:'🥪 练前餐',n:''},{t:'15:45–16:15',a:'🚶 去健身房',n:''},{t:'16:15–18:15',a:'🏋️ 腿B训练+有氧+髋康复',n:''},{t:'18:15–18:30',a:'🥩 练后餐',n:''},{t:'18:30–19:00',a:'🚶 回家',n:''},{t:'19:00–20:30',a:'🇬🇧 英语二 翻译+写作',n:''},{t:'20:30–21:00',a:'🍲 晚餐',n:''},{t:'21:00–22:30',a:'💻 408 计网/复盘',n:''},{t:'22:30–23:00',a:'泡沫轴+装盒+肘滑动',n:''},{t:'23:00',a:'😴 睡觉',n:''}],
+study:studyCommon,
+tr:{title:'腿B+髋康复 🔑右腿先做',ex:[
+{n:'臀推 Hip Thrust',s:'4×8–10',note:'对腰极友好，强化臀肌'},{n:'单腿罗马尼亚硬拉',s:'3×10–12/侧',note:'🔑右腿先做！轻重量控制'},{n:'反向哈克/后侧腿举',s:'3×10–12',note:'腘绳肌+臀'},{n:'坐姿腿弯举',s:'3×12–15',note:''},{n:'弹力带侧向走',s:'3×15步/侧',note:'臀中肌'},{n:'腹部卷腹',s:'3×15–20',note:'避免仰卧起坐'},{n:'悬垂举腿（屈膝版）',s:'3×8–12',note:'核心'},{n:'--髋康复--',s:'',note:''},{n:'托马斯拉伸',s:'3×30秒/侧',note:''},{n:'沙发拉伸',s:'2×45秒/侧',note:''},{n:'臀桥（弹力带）',s:'3×15',note:''},{n:'蚌式开合',s:'2×20/侧',note:''}]},
+meals:mealsCommon,
+rehab:['🔑右腿先做，匹配次数','髋康复全套（训练末尾）','左肘尺神经滑动 10次×3','弹力带慢速臂屈伸 15次×2','训练前热身5分钟','练后椭圆机30分钟'],
+tips:'💡 周五做完髋康复，周六学习冲刺。如果太累，今天可只做康复不练腿。'},
+sat:{name:'周六',title:'主动恢复 · 学习冲刺日',dt:'rest',badge:'📚 主动恢复',bc:'badge-rest',
+sch:[
+{t:'7:30',a:'起床',n:'多睡1小时'},{t:'8:00–8:30',a:'🚶 通勤自习室',n:''},{t:'8:30–11:30',a:'📐 数学二 模拟卷',n:'严格计时3h'},{t:'11:30–12:15',a:'🍱 午餐',n:''},{t:'12:15–13:00',a:'休息',n:''},{t:'13:00–15:00',a:'💻 408 真题模拟',n:'整套限时2.5h'},{t:'15:00–17:00',a:'📚 对答案+错题整理',n:'深度复盘，画知识图谱'},{t:'17:00–18:00',a:'🚶 散步/泡沫轴',n:'选做'},{t:'18:00–18:30',a:'🚶 回家',n:''},{t:'18:30–21:30',a:'📖 英语二+政治/自由',n:''},{t:'21:30–22:30',a:'晚餐+放松',n:''},{t:'23:00',a:'😴 睡觉',n:''}],
+study:studySat,
+tr:null,
+meals:[
+{time:'11:30',name:'午餐',loc:'自习室',kcal:'~750',options:'鸡胸/牛肉+米饭+蔬菜'},
+{time:'~18:00',name:'晚餐（可早吃）',loc:'家',kcal:'~600',options:'自由搭配，控制在600kcal内'},
+],
+rehab:['左肘尺神经滑动 10次×3','髋屈肌拉伸','散步/泡沫轴放松（选做）'],
+tips:'💡 周六冲刺日！上午数学模拟+下午408真题。散步和泡沫轴选做——太累就不做。'},
+sun:{name:'周日',title:'全休日 · 备餐日',dt:'fullRest',badge:'🛑 全休',bc:'badge-fullrest',
+sch:[
+{t:'自然醒',a:'不设闹钟',n:''},{t:'上午',a:'散步+早餐（可以吃）+发呆',n:'唯一吃早饭的一天'},{t:'10:00–12:00',a:'🍳 备餐：肉类处理',n:'鸡胸2kg洗→切→腌→分装5份'},{t:'中午',a:'做顿好吃的',n:'可以稍微放松饮食'},{t:'下午',a:'🍳 备餐：碳水+蔬菜',n:'米饭分5盒→红薯烤→蔬菜焯水→煮蛋'},{t:'傍晚',a:'出门溜达/见朋友/刷剧',n:'完全放空'},{t:'晚上',a:'拉伸+泡澡+早睡',n:'准备迎接周一'}],
+study:null,tr:null,
+meals:[{time:'随意',name:'自由日',loc:'',kcal:'~2500',options:'不严格计算，但不过量。可以吃一顿想吃的。'}],
+rehab:['全身拉伸（选做）','泡沫轴放松','泡脚/热敷腰部','左肘尺神经滑动（别忘了）'],
+tips:'🍳 备餐清单：鸡胸2kg腌制分装 → 牛肉/鱼/虾分份冷冻 → 米饭煮熟分5盒 → 红薯烤熟 → 西兰花焯水 → 菠菜洗净 → 煮6个蛋 → 燕麦分装7袋。听着播客做，2小时搞定。⛔ 不学习！不训练！'},
+};
+
+// ===================== WEEKLY GROCERY =====================
+const GROCERY = [
+{cat:'🥩 蛋白质类',items:[['鸡胸肉','2kg','约4-5块大胸，主力蛋白'],['鸡蛋','30个（2板）','日均4个，含水煮蛋储备'],['瘦牛肉','500g','牛腱/牛里脊，2顿量'],['鱼片','400g','巴沙鱼/龙利鱼，2顿量，冷冻'],['虾仁','300g','冷冻虾仁即可'],['老豆腐','1盒(400g)','2顿量']]},
+{cat:'🍚 碳水类',items:[['大米','1.5kg','普通或杂粮米'],['红薯','1.5kg','中小个，好蒸好烤'],['燕麦片','600g','即食或快煮'],['全麦面包','1袋(12片)','全麦粉排第一']]},
+{cat:'🧈 脂肪类',items:[['橄榄油','1瓶(250ml)','一周够用'],['无糖花生酱','1罐','配料仅花生'],['混合坚果(无盐)','100g','核桃/杏仁/腰果'],['牛油果','1-2个','早餐用']]},
+{cat:'🥬 蔬菜类',items:[['西兰花','2颗','焯水耐放，主力蔬菜'],['菠菜','2把','叶菜买2天量，周中补'],['青菜/生菜','2把','同上'],['胡萝卜','3根','耐放，切丝炒/凉拌'],['黄瓜','3根','凉拌/生吃'],['番茄','4个','炒蛋/凉拌/生吃'],['蘑菇','1盒(200g)','炒/汤'],['洋葱','2个','调味+蔬菜'],['蒜、姜','各1份','腌肉+炒菜必备']]},
+{cat:'🍌 水果',items:[['香蕉','7-8根','练前必备，每天1根'],['苹果','3-4个','早餐/加餐'],['当季水果','随意','蓝莓/橙子/猕猴桃']]},
+{cat:'🧂 调料',items:[['酱油(生抽+老抽)','各1瓶','腌肉+调味'],['料酒','1瓶','去腥'],['蚝油','1瓶','提鲜'],['黑胡椒粉','1瓶','必备'],['小苏打','1袋','嫩肉用，每500g鸡胸加2g']]},
+];
+
+// ===================== RENDER =====================
+function getTodayKey(){
+  const m={0:'sun',1:'mon',2:'tue',3:'wed',4:'thu',5:'fri',6:'sat'};
+  return m[new Date().getDay()];
+}
+function fmtDate(){
+  return new Date().toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric',weekday:'long'});
+}
+function nav(key){
+  document.getElementById('dn').innerHTML = DAYS.map(k=>
+    `<button class="${k===key?'active':''}" onclick="sw('${k}')">${D[k].name}</button>`
+  ).join('');
+}
+function sw(key){render(key);window.scrollTo({top:0,behavior:'smooth'})}
+
+let currentKey = null;
+function showTab(tab){
+  const sections = {sch:'s-sch',meals:'s-meals',tr:'s-tr',rehab:'s-rehab',grocery:'s-grocery'};
+  Object.entries(sections).forEach(([k,id])=>{
+    const el = document.getElementById(id);
+    if(el) el.classList.toggle('hidden', k!==tab);
+  });
+  // Update tab buttons
+  document.querySelectorAll('.tabs button').forEach(b=>{
+    b.classList.toggle('active', b.dataset.tab===tab);
+  });
+  // Special: show grocery only in 饮食 tab, alongside meals
+  const ge = document.getElementById('s-grocery');
+  if(ge) ge.classList.toggle('hidden', tab!=='meals');
+}
+
+function render(key){
+  currentKey = key;
+  const d = D[key];
+  document.getElementById('dd').textContent = fmtDate();
+  document.getElementById('dt').textContent = d.title;
+  document.getElementById('db').innerHTML = `<span class="day-badge ${d.bc}">${d.badge}</span>`;
+  nav(key);
+
+  // Determine which tabs to show
+  const hasTr = !!d.tr;
+  const tabsHTML = `
+    <button class="active" data-tab="sch" onclick="showTab('sch')"><span class="t-icon">⏰</span>时间表</button>
+    <button data-tab="meals" onclick="showTab('meals')"><span class="t-icon">🍱</span>饮食</button>
+    ${hasTr ? `<button data-tab="tr" onclick="showTab('tr')"><span class="t-icon">🏋️</span>训练</button>` : ''}
+    <button data-tab="rehab" onclick="showTab('rehab')"><span class="t-icon">🩺</span>注意</button>
+  `;
+  document.getElementById('tabs').innerHTML = tabsHTML;
+
+  let html = '';
+
+  // === 时间表 ===
+  html += `<div id="s-sch"><div class="card"><h3>⏰ 今日时间表</h3><div class="tl">`;
+  d.sch.forEach(s=>{
+    html += `<div class="ti"><div class="tt">${s.t}</div><div class="ta">${s.a}</div>${s.n?`<div class="tn">${s.n}</div>`:''}</div>`;
+  });
+  html += `</div></div>`;
+
+  // Study
+  if(d.study){
+    html += `<div class="card"><h3>📚 数二+英二+408 学习计划</h3>`;
+    d.study.forEach(s=>{
+      const tags = s.tags ? s.tags.split(' ').map(t=>{
+        const labels={math:'数二',eng:'英二','408':'408',pol:'政治'};
+        return `<span class="tag tag-${t}">${labels[t]||t}</span>`;
+      }).join('') : '';
+      html += `<div class="sb"><div class="sbs">${tags} ${s.sub}</div><div class="sbt">${s.time}</div>${s.tip?`<div class="sbp">${s.tip}</div>`:''}</div>`;
+    });
+    html += `</div>`;
+  }
+
+  html += `</div>`; // close s-sch
+
+  // === 饮食 ===
+  html += `<div id="s-meals" class="hidden"><div class="card"><h3>🍱 今日饮食</h3>`;
+  d.meals.forEach(m=>{
+    const locTag = m.loc ? `<span class="ml">@${m.loc}</span>` : '';
+    html += `<div class="meal"><div class="mh"><span class="mn">${m.name}${locTag}</span><span class="mt">${m.time} · ${m.kcal}</span></div><div class="mo">${m.options}</div></div>`;
+  });
+  html += `</div>`;
+
+  // Weekly grocery (only shown on Sunday)
+  if(key==='sun'){
+  html += `<div id="s-grocery" class="card"><h3>🛒 一周采购清单（周日备餐用）</h3>`;
+  html += `<table class="grocery-table">`;
+  GROCERY.forEach(cat=>{
+    html += `<tr><td class="cat" colspan="3">${cat.cat}</td></tr>`;
+    cat.items.forEach((item,i)=>{
+      html += `<tr><td>${item[0]}</td><td style="white-space:nowrap;color:var(--accent);font-weight:600">${item[1]}</td><td style="font-size:11px;color:var(--sub)">${item[2]}</td></tr>`;
+    });
+  });
+  html += `</table>`;
+  html += `<div style="font-size:11px;color:var(--sub);text-align:center;margin-top:8px">💰 预估总花费 ¥300-440/周 · 日均¥43-63</div>`;
+  html += `</div>`;
+  } // end sunday-only grocery
+  html += `</div>`; // close s-grocery + s-meals
+
+  // === 训练 ===
+  if(d.tr){
+    html += `<div id="s-tr" class="hidden"><div class="card"><h3>🏋️ ${d.tr.title}</h3>`;
+    d.tr.ex.forEach(ex=>{
+      if(ex.n.startsWith('--')){
+        html += `<div class="sep">${ex.n}</div>`;
+      }else{
+        html += `<div class="ex"><div><div class="exn">${ex.n}</div>${ex.note?`<div class="exnote">${ex.note}</div>`:''}</div><div class="exs">${ex.s}</div></div>`;
+      }
+    });
+    html += `</div></div>`;
+  }
+
+  // === 注意事项 ===
+  html += `<div id="s-rehab" class="hidden"><div class="card"><h3>🩺 康复 & 注意事项</h3>`;
+  d.rehab.forEach((r,i)=>{
+    html += `<div class="rh"><input type="checkbox" id="rh${i}"><label for="rh${i}">${r}</label></div>`;
+  });
+  html += `</div>`;
+  if(d.tips) html += `<div class="tips">${d.tips}</div>`;
+  html += `</div>`; // close s-rehab
+
+  document.getElementById('ct').innerHTML = html;
+
+  // Load checkboxes
+  d.rehab.forEach((_,i)=>{
+    const cb = document.getElementById('rh'+i);
+    if(cb){
+      cb.checked = localStorage.getItem(`r-${key}-${i}`)==='true';
+      cb.addEventListener('change',()=>localStorage.setItem(`r-${key}-${i}`,cb.checked));
+    }
+  });
+
+  // Show first tab by default
+  showTab('sch');
+}
+
+render(getTodayKey());
+
+
+// ===================== SERVICE WORKER (offline cache) =====================
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/今日安排.html?sw=1').catch(()=>{});
+  // Self-caching: register a blob worker that caches this page
+  const cacheName = 'today-plan-v1';
+  const cachePage = async ()=>{
+    const cache = await caches.open(cacheName);
+    await cache.add(location.href);
+  };
+  // Try to cache on first load
+  window.addEventListener('load',()=>{
+    if(navigator.onLine) cachePage().catch(()=>{});
+  });
+  // Intercept fetch with the file itself
+  if(!navigator.serviceWorker.controller){
+    const swCode = `
+      const CACHE = 'today-plan-v1';
+      self.addEventListener('install',e=>{self.skipWaiting()});
+      self.addEventListener('activate',e=>{e.waitUntil(clients.claim())});
+      self.addEventListener('fetch',e=>{
+        if(e.request.url.includes('今日安排')){
+          e.respondWith(
+            caches.match(e.request).then(r=>r||fetch(e.request).then(resp=>{
+              return caches.open(CACHE).then(c=>{c.put(e.request,resp.clone());return resp});
+            }))
+          );
+        }
+      });
+    `;
+    const blob = new Blob([swCode],{type:'application/javascript'});
+    const swUrl = URL.createObjectURL(blob);
+    navigator.serviceWorker.register(swUrl).catch(()=>{});
+  }
+}
+
+</script>
+</body>
+</html>
